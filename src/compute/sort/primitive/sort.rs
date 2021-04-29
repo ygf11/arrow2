@@ -25,7 +25,7 @@ use crate::{
 
 use super::super::SortOptions;
 
-fn sort_inner<T, F>(values: &mut [T], mut cmp: F, descending: bool)
+pub(super) fn sort_inner<T, F>(values: &mut [T], mut cmp: F, descending: bool)
 where
     T: NativeType,
     F: FnMut(&T, &T) -> std::cmp::Ordering,

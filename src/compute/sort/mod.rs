@@ -49,13 +49,7 @@ macro_rules! dyn_sort {
     }};
 }
 
-/// Sort the `ArrayRef` using `SortOptions`.
-///
-/// Performs a stable sort on values and indices. Nulls are ordered according to the `nulls_first` flag in `options`.
-/// Floats are sorted using IEEE 754 totalOrder
-///
-/// Returns an `ArrowError::ComputeError(String)` if the array type is either unsupported by `sort_to_indices` or `take`.
-///
+/// Sorts `values` using `SortOptions`.
 pub fn sort(values: &dyn Array, options: &SortOptions) -> Result<Box<dyn Array>> {
     match values.data_type() {
         DataType::Int8 => dyn_sort!(i8, values, ord::total_cmp, options),
@@ -81,8 +75,57 @@ pub fn sort(values: &dyn Array, options: &SortOptions) -> Result<Box<dyn Array>>
             dyn_sort!(days_ms, values, ord::total_cmp, options)
         }
         _ => {
+            // fall back to the slower implementation
             let indices = sort_to_indices(values, options)?;
             take::take(values, &indices)
+        }
+    }
+}
+
+macro_rules! dyn_partial_sort {
+    ($ty:ty, $array:expr, $cmp:expr, $options:expr, $limit:expr) => {{
+        let array = $array
+            .as_any()
+            .downcast_ref::<PrimitiveArray<$ty>>()
+            .unwrap();
+        Ok(Box::new(primitive::partial_sort_by::<$ty, _>(
+            &array, $cmp, $options, $limit,
+        )))
+    }};
+}
+
+/// Sorts `values` using `SortOptions` up to `limit`.
+pub fn partial_sort(
+    values: &dyn Array,
+    options: &SortOptions,
+    limit: usize,
+) -> Result<Box<dyn Array>> {
+    match values.data_type() {
+        DataType::Int8 => dyn_partial_sort!(i8, values, ord::total_cmp, options, limit),
+        DataType::Int16 => dyn_partial_sort!(i16, values, ord::total_cmp, options, limit),
+        DataType::Int32
+        | DataType::Date32
+        | DataType::Time32(_)
+        | DataType::Interval(IntervalUnit::YearMonth) => {
+            dyn_partial_sort!(i32, values, ord::total_cmp, options, limit)
+        }
+        DataType::Int64
+        | DataType::Date64
+        | DataType::Time64(_)
+        | DataType::Timestamp(_, None)
+        | DataType::Duration(_) => dyn_partial_sort!(i64, values, ord::total_cmp, options, limit),
+        DataType::UInt8 => dyn_partial_sort!(u8, values, ord::total_cmp, options, limit),
+        DataType::UInt16 => dyn_partial_sort!(u16, values, ord::total_cmp, options, limit),
+        DataType::UInt32 => dyn_partial_sort!(u32, values, ord::total_cmp, options, limit),
+        DataType::UInt64 => dyn_partial_sort!(u64, values, ord::total_cmp, options, limit),
+        DataType::Float32 => dyn_partial_sort!(f32, values, ord::total_cmp_f32, options, limit),
+        DataType::Float64 => dyn_partial_sort!(f64, values, ord::total_cmp_f64, options, limit),
+        DataType::Interval(IntervalUnit::DayTime) => {
+            dyn_partial_sort!(days_ms, values, ord::total_cmp, options, limit)
+        }
+        _ => {
+            // fall back to the slower implementation
+            sort(values, options).map(|array| array.slice(0, limit))
         }
     }
 }
@@ -105,8 +148,7 @@ macro_rules! dyn_sort_indices {
     }};
 }
 
-/// Sort elements from `ArrayRef` into an unsigned integer (`UInt32Array`) of indices.
-/// For floating point arrays any NaN values are considered to be greater than any other non-null value
+/// Sort elements from `values` into indices.
 pub fn sort_to_indices(values: &dyn Array, options: &SortOptions) -> Result<Int32Array> {
     match values.data_type() {
         DataType::Boolean => {
