@@ -118,7 +118,6 @@ impl MutableFixedSizeBinaryArray {
         if self.values.len() < self.size {
             return None;
         }
-
         let value_start = self.values.len() - self.size;
         let value = self.values.split_off(value_start);
         self.validity
