@@ -45,19 +45,19 @@ fn pop_all_some() {
     a.push(Some("first"));
     a.push(Some("second"));
     a.push(Some("third"));
-    a.push(Some("firth"));
+    a.push(Some("fourth"));
     for _ in 0..4 {
         a.push(Some("aaaa"));
     }
-    a.push(Some("bbbb"));
+    a.push(Some("こんにちは"));
 
-    assert_eq!(a.pop(), Some("bbbb".to_string()));
+    assert_eq!(a.pop(), Some("こんにちは".to_string()));
     assert_eq!(a.pop(), Some("aaaa".to_string()));
     assert_eq!(a.pop(), Some("aaaa".to_string()));
     assert_eq!(a.pop(), Some("aaaa".to_string()));
     assert_eq!(a.len(), 5);
     assert_eq!(a.pop(), Some("aaaa".to_string()));
-    assert_eq!(a.pop(), Some("firth".to_string()));
+    assert_eq!(a.pop(), Some("fourth".to_string()));
     assert_eq!(a.pop(), Some("third".to_string()));
     assert_eq!(a.pop(), Some("second".to_string()));
     assert_eq!(a.pop(), Some("first".to_string()));

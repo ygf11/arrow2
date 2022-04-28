@@ -99,7 +99,7 @@ fn pop_all_some() {
     a.push(Some(b"first"));
     a.push(Some(b"second"));
     a.push(Some(b"third"));
-    a.push(Some(b"firth"));
+    a.push(Some(b"fourth"));
 
     for _ in 0..4 {
         a.push(Some(b"aaaa"));
@@ -113,7 +113,7 @@ fn pop_all_some() {
     assert_eq!(a.pop(), Some(b"aaaa".to_vec()));
     assert_eq!(a.len(), 5);
     assert_eq!(a.pop(), Some(b"aaaa".to_vec()));
-    assert_eq!(a.pop(), Some(b"firth".to_vec()));
+    assert_eq!(a.pop(), Some(b"fourth".to_vec()));
     assert_eq!(a.pop(), Some(b"third".to_vec()));
     assert_eq!(a.pop(), Some(b"second".to_vec()));
     assert_eq!(a.pop(), Some(b"first".to_vec()));
