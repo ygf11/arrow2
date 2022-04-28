@@ -177,7 +177,9 @@ impl<O: Offset> MutableUtf8Array<O> {
             .as_mut()
             .map(|x| x.pop()?.then(|| ()))
             .unwrap_or_else(|| Some(()))
-            .map(|_| unsafe { String::from_utf8_unchecked(value) })
+            .map(|_|
+                // soundness: we always check for utf8 soundness on constructors.
+                unsafe { String::from_utf8_unchecked(value) })
     }
 
     fn init_validity(&mut self) {
